@@ -85,3 +85,5 @@ include/osmocom/core/crc*gen.h
 
 # vi files
 *.sw?
+/build-target/
+/compile

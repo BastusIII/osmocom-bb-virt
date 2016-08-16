@@ -34,3 +34,4 @@ osmoload
 *.dump
 *.bin
 *.log
+/compile
