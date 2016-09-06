@@ -12,7 +12,8 @@ CROSS_TOOL_PREFIX=$(CROSS_HOST)-
 TOPDIR=$(shell pwd)
 
 all: libosmocore-target nofirmware firmware mtk-firmware
-nofirmware: layer23 osmocon gsmmap
+
+nofirmware: layer23 osmocon gsmmap virtphy
 
 libosmocore-target: shared/libosmocore/build-target/src/.libs/libosmocore.a
 
@@ -45,6 +46,15 @@ host/osmocon/Makefile: host/osmocon/configure
 host/osmocon/osmocon: host/osmocon/Makefile
 	make -C host/osmocon
 
+.PHONY: virtphy
+virtphy: host/virt_phy/Makefile
+	cd host/virt_phy && make
+
+host/virt_phy/configure: host/virt_phy/configure.ac
+	cd host/virt_phy && autoreconf -i
+	
+host/virt_phy/Makefile: host/virt_phy/configure
+	cd host/virt_phy && ./configure $(HOST_CONFARGS)
 
 .PHONY: gsmmap
 gsmmap: host/gsmmap/gsmmap
@@ -85,6 +95,7 @@ clean:
 	make -C shared/libosmocore/build-target $@
 	make -C host/layer23 $@
 	make -C host/osmocon $@
+	make -C host/virt_phy $@
 	make -C target/firmware $@
 	make -C target/firmware -f Makefile.mtk $@
 
@@ -92,5 +103,6 @@ distclean:
 	rm -rf shared/libosmocore/build-target
 	make -C host/layer23 $@
 	make -C host/osmocon $@
+	make -C host/virt_phy $@
 # 'firmware' also handles 'mtk-firmware'
 	make -C target/firmware $@

@@ -6,6 +6,7 @@
 #include <layer1/l23_api.h>
 #include <osmocom/core/logging.h>
 #include "virtual_um.h"
+#include <osmo-bts/scheduler.h>
 
 /**
  * Send a message over the virtual um interface.
