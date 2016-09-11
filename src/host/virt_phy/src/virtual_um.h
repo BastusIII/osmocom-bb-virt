@@ -1,7 +1,8 @@
 #pragma once
 
-#include <osmocom/core/select.h>
+#include <stdint.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/select.h>
 
 #define VIRTUAL_UM_ADDR "239.0.47.29" /* Default multicast address */
 
@@ -23,9 +24,10 @@ struct virt_um_inst {
  *
  * @return The initialised virtual um instance.
  */
-struct virt_um_inst *virt_um_init(void *ctx, const char *group, uint16_t port,
-				  const char *netdev, void *priv,
-				  void (*recv_cb)(struct virt_um_inst *vui, struct msgb *msg));
+struct virt_um_inst *virt_um_init(
+                void *ctx, const char *group, uint16_t port, const char *netdev,
+                void *priv,
+                void (*recv_cb)(struct virt_um_inst *vui, struct msgb *msg));
 /**
  * @brief destroy the virtual um interface.
  *

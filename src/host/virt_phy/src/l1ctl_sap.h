@@ -1,0 +1,47 @@
+#pragma once
+
+#include <stdint.h>
+#include <osmocom/core/msgb.h>
+#include "l1ctl_proto.h"
+#include "l1ctl_sock.h"
+#include "virtual_um.h"
+
+/* following sizes are used for message allocation */
+/* size of layer 3 header */
+#define L3_MSG_HEAD 4
+/* size of layer 3 payload */
+#define L3_MSG_DATA 200
+#define L3_MSG_SIZE (sizeof(struct l1ctl_hdr) + L3_MSG_HEAD + L3_MSG_DATA)
+
+void l1ctl_sap_init(struct virt_um_inst *vui, struct l1ctl_sock_inst *lsi);
+void l1ctl_sap_tx_to_l23(struct l1ctl_sock_inst *lsi, struct msgb *msg);
+void l1ctl_sap_tx_to_l23(struct msgb *msg);
+void l1ctl_sap_rx_from_l23_cb(struct l1ctl_sock_inst *lsi, struct msgb *msg);
+void l1ctl_sap_rx_from_l23(struct msgb *msg);
+void l1ctl_sap_handler(void);
+
+/* utility methods */
+struct msgb *l1ctl_msgb_alloc(uint8_t msg_type);
+struct msgb *l1ctl_create_l2_msg(int msg_type, uint32_t fn, uint16_t snr,
+                                 uint16_t arfcn);
+/* receive routines */
+void l1ctl_rx_fbsb_req(struct msgb *msg);
+void l1ctl_rx_dm_est_req(struct msgb *msg);
+void l1ctl_rx_dm_rel_req(struct msgb *msg);
+void l1ctl_rx_param_req(struct msgb *msg);
+void l1ctl_rx_dm_freq_req(struct msgb *msg);
+void l1ctl_rx_crypto_req(struct msgb *msg);
+void l1ctl_rx_rach_req(struct msgb *msg);
+void l1ctl_rx_data_req(struct msgb *msg);
+void l1ctl_rx_pm_req(struct msgb *msg);
+void l1ctl_rx_reset_req(struct msgb *msg);
+void l1ctl_rx_ccch_mode_req(struct msgb *msg);
+void l1ctl_rx_tch_mode_req(struct msgb *msg);
+void l1ctl_rx_neigh_pm_req(struct msgb *msg);
+void l1ctl_rx_traffic_req(struct msgb *msg);
+void l1ctl_rx_sim_req(struct msgb *msg);
+
+/* transmit routines */
+void l1ctl_tx_reset(uint8_t msg_type, uint8_t reset_type);
+void l1ctl_tx_ccch_mode_conf(uint8_t ccch_mode);
+void l1ctl_tx_tch_mode_conf(uint8_t tch_mode, uint8_t audio_mode);

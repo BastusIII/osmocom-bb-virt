@@ -3,7 +3,8 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
 
-#define L1CTL_SOCK_PATH	"/tmp/osmocom_l2" /* TODO: multiple sockets for multiple virtual mobiles clients need to be possible!*/
+/* TODO: multiple sockets for multiple virtual mobiles clients need to be possible!*/
+#define L1CTL_SOCK_PATH	"/tmp/osmocom_l2"
 
 /* L1CTL socket instance contains socket data. */
 struct l1ctl_sock_inst {
@@ -16,7 +17,10 @@ struct l1ctl_sock_inst {
 /**
  * @brief Initialise the l1ctl socket for communication with l2 apps.
  */
-struct l1ctl_sock_inst *l1ctl_sock_init(void *ctx, void (*recv_cb)(struct l1ctl_sock_inst *lsi, struct msgb *msg), char *path);
+struct l1ctl_sock_inst *l1ctl_sock_init(
+                void *ctx,
+                void (*recv_cb)(struct l1ctl_sock_inst *lsi, struct msgb *msg),
+                char *path);
 
 /**
  * @brief Transmit message to l2.
@@ -26,4 +30,4 @@ int l1ctl_sock_write_msg(struct l1ctl_sock_inst *lsi, struct msgb *msg);
 /**
  * @brief Destroy instance.
  */
-void l1ctl_destroy();
+void l1ctl_sock_destroy();

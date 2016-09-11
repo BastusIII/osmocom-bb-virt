@@ -1,5 +1,7 @@
 /* Routines for a Virtual Um interface over GSMTAP/UDP */
 
+/* TODO: Implement cryptographic operations for virtual um! */
+
 /* (C) 2015 by Harald Welte <laforge@gnumonks.org>, Sebastian Stumpf
  *
  * All Rights Reserved
