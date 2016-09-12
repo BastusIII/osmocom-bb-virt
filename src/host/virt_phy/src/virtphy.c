@@ -1,15 +1,16 @@
 /* osmocom includes */
 
-#include <gsmtapl1_if.h>
-#include <osmocom/core/logging.h>
+#include "logging.h"
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
 #include <osmo-bts/scheduler.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <virtual_um.h>
 
+#include "virtual_um.h"
+#include "l1ctl_sock.h"
+#include "gsmtapl1_if.h"
 #include "l1ctl_sap.h"
 
 /**
@@ -54,23 +55,22 @@ int main(void)
 {
 
 	// init loginfo
-	static const struct log_info log_info = {};
 	static struct virt_um_inst *vui;
 	static struct l1ctl_sock_inst *lsi;
-	log_init(&log_info, NULL);
+	ms_log_init("DL1C,1:DVIRPHY,1");
 
-	printf("%s\n", "Virtual physical layer starting up...");
+	LOGP(DVIRPHY, LOGL_INFO, "Virtual physical layer starting up...\n");
 
 	// TODO: make this configurable
-	vui = virt_um_init(NULL, "224.0.0.1", 6666, "wlan0", NULL, gsmtapl1_rx_from_virt_um_cb);
-	lsi = l1ctl_sock_init(NULL, l1ctl_sap_rx_from_l23_cb, NULL);
+	vui = virt_um_init(NULL, "224.0.0.1", 6666, "wlan0", NULL, gsmtapl1_rx_from_virt_um_inst_cb);
+	lsi = l1ctl_sock_init(NULL, l1ctl_sap_rx_from_l23_inst_cb, NULL);
 	gsmtapl1_init(vui, lsi);
 	l1ctl_sap_init(vui, lsi);
 
 	/* inform l2 and upwards that we have booted and are ready for orders */
 	l1ctl_tx_reset(L1CTL_RESET_IND, L1CTL_RES_T_BOOT);
 
-	printf("%s\n", "Virtual physical layer ready...");
+	LOGP(DVIRPHY, LOGL_INFO, "Virtual physical layer ready...\n");
 
 	while (1) {
 		// handle osmocom fd READ events (l1ctl-unix-socket, virtual-um-mcast-socket)

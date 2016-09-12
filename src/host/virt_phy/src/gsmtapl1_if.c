@@ -20,8 +20,8 @@
  */
 
 #include <osmocom/core/gsmtap.h>
+#include <osmocom/core/gsmtap_util.h>
 #include <osmocom/core/msgb.h>
-#include <osmocom/bb/common/logging.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <l1ctl_proto.h>
@@ -29,6 +29,7 @@
 #include "l1ctl_sap.h"
 #include "gsmtapl1_if.h"
 #include "virtual_um.h"
+#include "logging.h"
 
 static struct virt_um_inst *_vui = NULL;
 static struct l1ctl_sock_inst *_lsi = NULL;
@@ -42,28 +43,32 @@ void gsmtapl1_init(struct virt_um_inst *vui, struct l1ctl_sock_inst *lsi)
 /**
  * Append a gsmtap header to msg and send it over the virt um.
  */
-void gsmtapl1_tx_to_virt_um(struct virt_um_inst *vui, struct msgb *msg)
+void gsmtapl1_tx_to_virt_um_inst(struct virt_um_inst *vui, struct msgb *msg)
 {
-	struct l1ctl_hdr l1h = msg->l1h;
-	struct l1ctl_info_dl *l1dl = msg->data;
-	struct phy_link *plink = vui->priv;
-	struct phy_instance *pinst = phy_instance_by_num(plink, 0);
-	struct gsm_bts_trx *trx = pinst->trx;
+	struct l1ctl_hdr *l1hdr = (struct l1ctl_hdr *)msg->l1h;
+	struct l1ctl_info_dl *l1dl = (struct l1ctl_info_dl *)msg->data;
 	uint8_t ss = 0;
 	uint8_t gsmtap_chan;
 	struct msgb *outmsg;
 
-	switch (l1h->msg_type) {
+	switch (l1hdr->msg_type) {
 	case L1CTL_DATA_REQ:
 		// TODO: check what data request and set gsmtap_chan depending on that
-		gsmtap_chan = NULL;
+		gsmtap_chan = 0;
 		break;
 	}
 	outmsg = gsmtap_makemsg(l1dl->band_arfcn, l1dl->chan_nr, gsmtap_chan,
 	                ss, l1dl->frame_nr, 0, 0, msgb_l2(msg),
 	                msgb_l2len(msg));
 	if (outmsg) {
+		struct gsmtap_hdr *gh = (struct gsmtap_hdr *)outmsg->l1h;
 		virt_um_write_msg(vui, outmsg);
+		DEBUGP(DVIRPHY,
+		                "Sending gsmtap msg to virt um - (arfcn=%u, type=%u, subtype=%u, timeslot=%u, subslot=%u)\n",
+		                gh->arfcn, gh->type, gh->sub_type, gh->timeslot,
+		                gh->sub_slot);
+	} else {
+		LOGP(DVIRPHY, LOGL_ERROR, "Gsmtap msg could not be created!\n");
 	}
 
 	/* free message */
@@ -73,27 +78,32 @@ void gsmtapl1_tx_to_virt_um(struct virt_um_inst *vui, struct msgb *msg)
 /**
  * @see void gsmtapl1_tx_to_virt_um(struct virt_um_inst *vui, struct msgb *msg).
  */
-void gsmtapl1_tx_to_virt_um(struct msgb *msg) {
-	gsmtapl1_tx_to_virt_um(_vui, msg);
+void gsmtapl1_tx_to_virt_um(struct msgb *msg)
+{
+	gsmtapl1_tx_to_virt_um_inst(_vui, msg);
 }
 
 /**
  * Converts msg to gsmtap and send it overt the virt um.
  */
-void gsmtapl1_rx_from_virt_um_cb(struct virt_um_inst *vui, struct msgb msg)
+void gsmtapl1_rx_from_virt_um_inst_cb(struct virt_um_inst *vui,
+                                      struct msgb *msg)
 {
 	if (msg) {
 		struct l1ctl_hdr *l1ctlh;
-		struct gsmtap_hdr *gh = msg->l1h;
-		struct phy_link *plink = vui->priv;
-		// TODO: is there more than one physical instance? Where do i get the corresponding pinst number? Maybe gsmtap_hdr->antenna?
-		struct phy_instance *pinst = phy_instance_by_num(plink, 0);
+		struct l1ctl_info_dl *l1dl;
+		struct gsmtap_hdr *gh = (struct gsmtap_hdr *)msg->l1h;
 		struct msgb *l1ctl_msg = NULL;
+
+		DEBUGP(DVIRPHY,
+		                "Receiving gsmtap msg from virt um - (arfcn=%u, type=%u, subtype=%u, timeslot=%u, subslot=%u)\n",
+		                gh->arfcn, gh->type, gh->sub_type, gh->timeslot,
+		                gh->sub_slot);
 
 		switch (gh->sub_type) {
 		case GSMTAP_CHANNEL_RACH:
-			LOGP(LOGL_NOTICE, DL1C,
-			                "Ignore incoming msg - channel type uplink only!");
+			LOGP(DL1C, LOGL_NOTICE,
+			                "Ignoring gsmtap msg from virt um - channel type is uplink only!");
 			goto nomessage;
 		case GSMTAP_CHANNEL_SDCCH:
 		case GSMTAP_CHANNEL_SDCCH4:
@@ -127,17 +137,17 @@ void gsmtapl1_rx_from_virt_um_cb(struct virt_um_inst *vui, struct msgb msg)
 		case GSMTAP_CHANNEL_PTCCH:
 		case GSMTAP_CHANNEL_CBCH51:
 		case GSMTAP_CHANNEL_CBCH52:
-			LOGP(LOGL_NOTICE, DL1C,
-			                "Ignore incoming msg - channel type not supported!");
+			LOGP(DL1C, LOGL_NOTICE,
+			                "Ignoring gsmtap msg from virt um - channel type not supported!");
 			goto nomessage;
 		default:
-			LOGP(LOGL_NOTICE, DL1C,
-			                "Ignore incoming msg - channel type unknown.");
+			LOGP(DL1C, LOGL_NOTICE,
+			                "Ignoring gsmtap msg from virt um - channel type unknown.");
 			goto nomessage;
 		}
 		/* forward l1ctl primitive */
 		l1ctl_sap_tx_to_l23(l1ctl_msg);
-		DEBUG(DL1C, "Message forwarded to layer 2.");
+		DEBUGP(DL1C, "Message forwarded to layer 2.");
 		return;
 
 		// handle memory deallocation
@@ -149,6 +159,7 @@ void gsmtapl1_rx_from_virt_um_cb(struct virt_um_inst *vui, struct msgb msg)
 /**
  * @see void gsmtapl1_rx_from_virt_um_cb(struct virt_um_inst *vui, struct msgb msg).
  */
-void gsmtapl1_rx_from_virt_um(struct msgb msg) {
-	gsmtapl1_rx_from_virt_um_cb(_vui, msg);
+void gsmtapl1_rx_from_virt_um(struct msgb *msg)
+{
+	gsmtapl1_rx_from_virt_um_inst_cb(_vui, msg);
 }

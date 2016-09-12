@@ -20,6 +20,9 @@
 
 #include <osmocom/abis/e1_input.h>
 
+// TODO: that reference shouldn't be here
+#include <osmo-bts/tx_power.h>
+
 #ifndef ROLE_BSC
 #include <osmocom/gsm/lapdm.h>
 #endif

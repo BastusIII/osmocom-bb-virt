@@ -5,9 +5,10 @@
 #include <osmocom/core/utils.h>
 #include <stdio.h>
 #include <l1ctl_proto.h>
-#include <osmocom/bb/common/logging.h>
+#include <netinet/in.h>
 
 #include "l1ctl_sap.h"
+#include "logging.h"
 
 /* Buffer for incoming L1CTL messages from layer 2 */
 static struct llist_head l1ctl_rx_queue = LLIST_HEAD_INIT(l1ctl_rx_queue);
@@ -29,7 +30,7 @@ void l1ctl_sap_init(struct virt_um_inst *vui, struct l1ctl_sock_inst *lsi)
  *
  * Enqueues the message into the rx queue.
  */
-void l1ctl_sap_rx_from_l23_cb(struct l1ctl_sock_inst *lsi, struct msgb *msg)
+void l1ctl_sap_rx_from_l23_inst_cb(struct l1ctl_sock_inst *lsi, struct msgb *msg)
 {
 	if (msg) {
 		DEBUGP(DL1C, "Message incoming from layer 2: %s\n",
@@ -43,7 +44,7 @@ void l1ctl_sap_rx_from_l23_cb(struct l1ctl_sock_inst *lsi, struct msgb *msg)
  */
 void l1ctl_sap_rx_from_l23(struct msgb *msg)
 {
-	l1ctl_sap_rx_from_l23_cb(_lsi, msg);
+	l1ctl_sap_rx_from_l23_inst_cb(_lsi, msg);
 }
 
 /**
@@ -51,7 +52,7 @@ void l1ctl_sap_rx_from_l23(struct msgb *msg)
  *
  * This will forward the message as it is to the upper layer.
  */
-void l1ctl_sap_tx_to_l23(struct l1ctl_sock_inst *lsi, struct msgb *msg)
+void l1ctl_sap_tx_to_l23_inst(struct l1ctl_sock_inst *lsi, struct msgb *msg)
 {
 	l1ctl_sock_write_msg(lsi, msg);
 }
@@ -61,7 +62,7 @@ void l1ctl_sap_tx_to_l23(struct l1ctl_sock_inst *lsi, struct msgb *msg)
  */
 void l1ctl_sap_tx_to_l23(struct msgb *msg)
 {
-	l1ctl_sap_tx_to_l23(_lsi, msg);
+	l1ctl_sap_tx_to_l23_inst(_lsi, msg);
 }
 
 /**
@@ -149,8 +150,8 @@ void l1ctl_sap_handler(void)
 
 	l1h = (struct l1ctl_hdr *)msg->data;
 
-	DEBUGP(DL1C, "handle msg: %s, length: %u", msg->len,
-	                osmo_hexdump(msg->data, sizeof(msg->data)));
+	DEBUGP(DL1C, "handle msg: %s, length: %u",
+	                osmo_hexdump(msg->data, sizeof(msg->data)), msg->len);
 
 	msg->l1h = msg->data;
 

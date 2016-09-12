@@ -44,6 +44,7 @@
 
 #include "l1ctl_sock.h"
 #include "virtual_um.h"
+#include "logging.h"
 
 #define L1CTL_SOCK_MSGB_SIZE	256
 

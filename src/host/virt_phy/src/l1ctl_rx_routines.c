@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <osmocom/core/msgb.h>
-#include <osmocom/bb/common/logging.h>
 #include <l1ctl_proto.h>
 
+#include "logging.h"
 #include "l1ctl_sap.h"
 
 /**
@@ -25,8 +25,8 @@ void l1ctl_rx_fbsb_req(struct msgb *msg)
 	struct l1ctl_hdr *l1h = (struct l1ctl_hdr *)msg->data;
 	struct l1ctl_fbsb_req *sync_req = (struct l1ctl_fbsb_req *)l1h->data;
 
-	LOGP(LOGL_ERROR, DL1C,
-	                "L1CTL_FBSB_REQ (arfcn=%u, flags=0x%x) should not be handled in virtual physical layer.\n",
+	DEBUGP(DL1C,
+	                "Received and ignored from l23 - L1CTL_FBSB_REQ (arfcn=%u, flags=0x%x)\n",
 	                ntohs(sync_req->band_arfcn), sync_req->flags);
 }
 
@@ -48,7 +48,8 @@ void l1ctl_rx_dm_est_req(struct msgb *msg)
 	struct l1ctl_dm_est_req *est_req =
 	                (struct l1ctl_dm_est_req *)ul->payload;
 
-	DEBUGP(DL1C, "L1CTL_DM_EST_REQ (arfcn=%u, chan_nr=0x%02x, tsc=%u)\n",
+	DEBUGP(DL1C,
+	                "Received and handled from l23 - L1CTL_DM_EST_REQ (arfcn=%u, chan_nr=0x%02x, tsc=%u)\n",
 	                ntohs(est_req->h0.band_arfcn), ul->chan_nr,
 	                est_req->tsc);
 
@@ -107,8 +108,8 @@ void l1ctl_rx_dm_freq_req(struct msgb *msg)
 	struct l1ctl_dm_freq_req *freq_req =
 	                (struct l1ctl_dm_freq_req *)ul->payload;
 
-	LOGP(LOGL_ERROR, DL1C,
-	                "L1CTL_DM_FREQ_REQ (arfcn=%u, tsc=%u) should not be handled in virtual physical layer.\n",
+	DEBUGP(DL1C,
+	                "Received and ignored from l23 - L1CTL_DM_FREQ_REQ (arfcn=%u, tsc=%u)\n",
 	                ntohs(freq_req->h0.band_arfcn), freq_req->tsc);
 }
 
@@ -133,7 +134,7 @@ void l1ctl_rx_crypto_req(struct msgb *msg)
 	struct l1ctl_crypto_req *cr = (struct l1ctl_crypto_req *)ul->payload;
 	uint8_t key_len = msg->len - sizeof(*l1h) - sizeof(*ul) - sizeof(*cr);
 
-	DEBUGP(DL1C, "L1CTL_CRYPTO_REQ (algo=A5/%u, len=%u)\n", cr->algo,
+	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_CRYPTO_REQ (algo=A5/%u, len=%u)\n", cr->algo,
 	                key_len);
 
 //	if (cr->algo && key_len != 8) {
@@ -159,7 +160,7 @@ void l1ctl_rx_dm_rel_req(struct msgb *msg)
 {
 //	struct l1ctl_hdr *l1h = (struct l1ctl_hdr *)msg->data;
 
-	DEBUGP(DL1C, "L1CTL_DM_REL_REQ\n");
+	DEBUGP(DL1C, "Received and ignored from l23 - L1CTL_DM_REL_REQ\n");
 //	l1a_mftask_set(0);
 //	l1s.dedicated.type = GSM_DCHAN_NONE;
 //	l1a_txq_msgb_flush(&l1s.tx_queue[L1S_CHAN_MAIN]);
@@ -189,8 +190,8 @@ void l1ctl_rx_param_req(struct msgb *msg)
 	struct l1ctl_info_ul *ul = (struct l1ctl_info_ul *)l1h->data;
 	struct l1ctl_par_req *par_req = (struct l1ctl_par_req *)ul->payload;
 
-	LOGP(LOGL_ERROR, DL1C,
-	                "L1CTL_PARAM_REQ (ta=%d, tx_power=%d) should not be handled in virtual physical layer.\n",
+	DEBUGP(DL1C,
+	                "Received and ignored from l23 - L1CTL_PARAM_REQ (ta=%d, tx_power=%d)\n",
 	                par_req->ta, par_req->tx_power);
 }
 
@@ -211,7 +212,7 @@ void l1ctl_rx_rach_req(struct msgb *msg)
 	struct l1ctl_info_ul *ul = (struct l1ctl_info_ul *)l1h->data;
 	struct l1ctl_rach_req *rach_req = (struct l1ctl_rach_req *)ul->payload;
 
-	DEBUGP(DL1C, "L1CTL_RACH_REQ (ra=0x%02x, offset=%d combined=%d)\n",
+	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_RACH_REQ (ra=0x%02x, offset=%d combined=%d)\n",
 	                rach_req->ra, ntohs(rach_req->offset),
 	                rach_req->combined);
 
@@ -237,7 +238,7 @@ void l1ctl_rx_data_req(struct msgb *msg)
 	struct l1ctl_data_ind *data_ind = (struct l1ctl_data_ind *)ul->payload;
 	struct llist_head *tx_queue;
 
-	DEBUGP(DL1C, "L1CTL_DATA_REQ (link_id=0x%02x)\n", ul->link_id);
+	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_DATA_REQ (link_id=0x%02x)\n", ul->link_id);
 
 //	msg->l3h = data_ind->data;
 //	if (ul->link_id & 0x40) {
@@ -274,8 +275,8 @@ void l1ctl_rx_pm_req(struct msgb *msg)
 	struct l1ctl_hdr *l1h = (struct l1ctl_hdr *)msg->data;
 	struct l1ctl_pm_req *pm_req = (struct l1ctl_pm_req *)l1h->data;
 
-	LOGP(LOGL_ERROR, DL1C,
-	                "L1CTL_PM_REQ TYPE=%u should not be handled in virtual physical layer.\n",
+	DEBUGP(DL1C,
+	                "Received and ignored from l23 - L1CTL_PM_REQ TYPE=%u\n",
 	                pm_req->type);
 }
 
@@ -297,19 +298,19 @@ void l1ctl_rx_reset_req(struct msgb *msg)
 
 	switch (reset_req->type) {
 	case L1CTL_RES_T_FULL:
-		DEBUGP(DL1C, "L1CTL_RESET_REQ: FULL!\n");
+		DEBUGP(DL1C, "Received and handled from l23 - L1CTL_RESET_REQ (type=FULL)\n");
 //		l1s_reset();
 //		l1s_reset_hw();
 //		audio_set_enabled(GSM48_CMODE_SIGN, 0);
 		l1ctl_tx_reset(L1CTL_RESET_CONF, reset_req->type);
 		break;
 	case L1CTL_RES_T_SCHED:
-		DEBUGP(DL1C, "L1CTL_RESET_REQ: SCHED!\n");
+		DEBUGP(DL1C, "Received and handled from l23 - L1CTL_RESET_REQ (type=SCHED)\n");
 //		l1ctl_tx_reset(L1CTL_RESET_CONF, reset_req->type);
 //		sched_gsmtime_reset();
 		break;
 	default:
-		DEBUGP(DL1C, "unknown L1CTL_RESET_REQ type\n");
+		LOGP(DL1C, LOGL_ERROR, "Received and ignored from l23 - L1CTL_RESET_REQ (type=unknown)\n");
 		break;
 	}
 }
@@ -332,7 +333,7 @@ void l1ctl_rx_ccch_mode_req(struct msgb *msg)
 	                (struct l1ctl_ccch_mode_req *)l1h->data;
 	uint8_t ccch_mode = ccch_mode_req->ccch_mode;
 
-	DEBUGP(DL1C, "L1CTL_CCCH_MODE_REQ\n");
+	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_CCCH_MODE_REQ\n");
 
 //	/* pre-set the CCCH mode */
 //	l1s.serving_cell.ccch_mode = ccch_mode;
@@ -368,7 +369,7 @@ void l1ctl_rx_tch_mode_req(struct msgb *msg)
 	uint8_t tch_mode = tch_mode_req->tch_mode;
 	uint8_t audio_mode = tch_mode_req->audio_mode;
 
-	DEBUGP(DL1C, "L1CTL_TCH_MODE_REQ (tch_mode=0x%02x audio_mode=0x%02x)\n",
+	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_TCH_MODE_REQ (tch_mode=0x%02x audio_mode=0x%02x)\n",
 	                tch_mode, audio_mode);
 //	tch_mode = l1a_tch_mode_set(tch_mode);
 //	audio_mode = l1a_audio_mode_set(audio_mode);
@@ -399,8 +400,8 @@ void l1ctl_rx_neigh_pm_req(struct msgb *msg)
 	struct l1ctl_neigh_pm_req *pm_req =
 	                (struct l1ctl_neigh_pm_req *)l1h->data;
 
-	LOGP(LOGL_ERROR, DL1C,
-	                "L1CTL_NEIGH_PM_REQ new list with %u entries - should not be handled in virtual physical layer.\n",
+	DEBUGP(DL1C,
+	                "Received and ignored from l23 - L1CTL_NEIGH_PM_REQ new list with %u entries\n",
 	                pm_req->n);
 }
 
@@ -423,7 +424,7 @@ void l1ctl_rx_traffic_req(struct msgb *msg)
 	struct l1ctl_traffic_req *tr = (struct l1ctl_traffic_req *)ul->payload;
 	int num = 0;
 
-	DEBUGP(DL1C, "L1CTL_TRAFFIC_REQ\n");
+	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_TRAFFIC_REQ\n");
 
 //	msg->l2h = tr->data;
 
@@ -454,7 +455,7 @@ void l1ctl_rx_sim_req(struct msgb *msg)
 	uint16_t len = msg->len - sizeof(struct l1ctl_hdr);
 	uint8_t *data = msg->data + sizeof(struct l1ctl_hdr);
 
-	DEBUGP(DL1C, "SIM Request length: %u, data: %s: ", len,
+	DEBUGP(DL1C, "Received and handled from l23 - SIM Request length: %u, data: %s: ", len,
 	                osmo_hexdump(data, sizeof(data)));
 
 	//sim_apdu(len, data);

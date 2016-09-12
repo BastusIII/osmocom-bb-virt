@@ -7,6 +7,7 @@
 #include <l1ctl_proto.h>
 
 #include "l1ctl_sap.h"
+#include "logging.h"
 
 /**
  * @brief Transmit L1CTL_RESET_IND or L1CTL_RESET_CONF to layer 23.
@@ -23,6 +24,7 @@ void l1ctl_tx_reset(uint8_t msg_type, uint8_t reset_type)
 	reset_resp = (struct l1ctl_reset *)msgb_put(msg, sizeof(*reset_resp));
 	reset_resp->type = reset_type;
 
+	DEBUGP(DL1C, "Sending to l23 - L1CTL_RESET (reset_type: %u)\n", reset_type);
 	l1ctl_sap_tx_to_l23(msg);
 }
 
@@ -44,6 +46,7 @@ void l1ctl_tx_ccch_mode_conf(uint8_t ccch_mode)
 	                sizeof(*mode_conf));
 	mode_conf->ccch_mode = ccch_mode;
 
+	DEBUGP(DL1C, "Sending to l23 - L1CTL_CCCH_MODE_CONF (mode: %u)\n", ccch_mode);
 	l1ctl_sap_tx_to_l23(msg);
 }
 
@@ -66,5 +69,6 @@ void l1ctl_tx_tch_mode_conf(uint8_t tch_mode, uint8_t audio_mode)
 	mode_conf->tch_mode = tch_mode;
 	mode_conf->audio_mode = audio_mode;
 
+	DEBUGP(DL1C, "Sending to l23 - L1CTL_TCH_MODE_CONF (tch_mode: %u, audio_mode: %u)\n", audio_mode);
 	l1ctl_sap_tx_to_l23(msg);
 }
