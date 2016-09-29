@@ -1,6 +1,8 @@
 #pragma once
 
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/gsmtap.h>
+
 #include "l1ctl_sock.h"
 #include "virtual_um.h"
 

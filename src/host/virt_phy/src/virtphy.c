@@ -62,7 +62,7 @@ int main(void)
 	LOGP(DVIRPHY, LOGL_INFO, "Virtual physical layer starting up...\n");
 
 	// TODO: make this configurable
-	vui = virt_um_init(NULL, "224.0.0.1", 6666, "wlan0", NULL, gsmtapl1_rx_from_virt_um_inst_cb);
+	vui = virt_um_init(NULL, DEFAULT_BTS_MCAST_GROUP, DEFAULT_BTS_MCAST_PORT, DEFAULT_MS_MCAST_GROUP, DEFAULT_MS_MCAST_PORT, gsmtapl1_rx_from_virt_um_inst_cb);
 	lsi = l1ctl_sock_init(NULL, l1ctl_sap_rx_from_l23_inst_cb, NULL);
 	gsmtapl1_init(vui, lsi);
 	l1ctl_sap_init(vui, lsi);
