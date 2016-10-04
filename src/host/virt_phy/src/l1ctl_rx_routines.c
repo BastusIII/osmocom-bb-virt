@@ -134,8 +134,9 @@ void l1ctl_rx_crypto_req(struct msgb *msg)
 	struct l1ctl_crypto_req *cr = (struct l1ctl_crypto_req *)ul->payload;
 	uint8_t key_len = msg->len - sizeof(*l1h) - sizeof(*ul) - sizeof(*cr);
 
-	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_CRYPTO_REQ (algo=A5/%u, len=%u)\n", cr->algo,
-	                key_len);
+	DEBUGP(DL1C,
+	                "Received and handled from l23 - L1CTL_CRYPTO_REQ (algo=A5/%u, len=%u)\n",
+	                cr->algo, key_len);
 
 //	if (cr->algo && key_len != 8) {
 //		DEBUGP(DL1C, "L1CTL_CRYPTO_REQ -> Invalid key\n");
@@ -212,7 +213,8 @@ void l1ctl_rx_rach_req(struct msgb *msg)
 	struct l1ctl_info_ul *ul = (struct l1ctl_info_ul *)l1h->data;
 	struct l1ctl_rach_req *rach_req = (struct l1ctl_rach_req *)ul->payload;
 
-	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_RACH_REQ (ra=0x%02x, offset=%d combined=%d)\n",
+	DEBUGP(DL1C,
+	                "Received and handled from l23 - L1CTL_RACH_REQ (ra=0x%02x, offset=%d combined=%d)\n",
 	                rach_req->ra, ntohs(rach_req->offset),
 	                rach_req->combined);
 
@@ -238,7 +240,9 @@ void l1ctl_rx_data_req(struct msgb *msg)
 	struct l1ctl_data_ind *data_ind = (struct l1ctl_data_ind *)ul->payload;
 	struct llist_head *tx_queue;
 
-	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_DATA_REQ (link_id=0x%02x)\n", ul->link_id);
+	DEBUGP(DL1C,
+	                "Received and handled from l23 - L1CTL_DATA_REQ (link_id=0x%02x)\n",
+	                ul->link_id);
 
 //	msg->l3h = data_ind->data;
 //	if (ul->link_id & 0x40) {
@@ -275,8 +279,7 @@ void l1ctl_rx_pm_req(struct msgb *msg)
 	struct l1ctl_hdr *l1h = (struct l1ctl_hdr *)msg->data;
 	struct l1ctl_pm_req *pm_req = (struct l1ctl_pm_req *)l1h->data;
 
-	DEBUGP(DL1C,
-	                "Received and ignored from l23 - L1CTL_PM_REQ TYPE=%u\n",
+	DEBUGP(DL1C, "Received and ignored from l23 - L1CTL_PM_REQ TYPE=%u\n",
 	                pm_req->type);
 }
 
@@ -298,19 +301,22 @@ void l1ctl_rx_reset_req(struct msgb *msg)
 
 	switch (reset_req->type) {
 	case L1CTL_RES_T_FULL:
-		DEBUGP(DL1C, "Received and handled from l23 - L1CTL_RESET_REQ (type=FULL)\n");
+		DEBUGP(DL1C,
+		                "Received and handled from l23 - L1CTL_RESET_REQ (type=FULL)\n");
 //		l1s_reset();
 //		l1s_reset_hw();
 //		audio_set_enabled(GSM48_CMODE_SIGN, 0);
 		l1ctl_tx_reset(L1CTL_RESET_CONF, reset_req->type);
 		break;
 	case L1CTL_RES_T_SCHED:
-		DEBUGP(DL1C, "Received and handled from l23 - L1CTL_RESET_REQ (type=SCHED)\n");
+		DEBUGP(DL1C,
+		                "Received and handled from l23 - L1CTL_RESET_REQ (type=SCHED)\n");
 //		l1ctl_tx_reset(L1CTL_RESET_CONF, reset_req->type);
 //		sched_gsmtime_reset();
 		break;
 	default:
-		LOGP(DL1C, LOGL_ERROR, "Received and ignored from l23 - L1CTL_RESET_REQ (type=unknown)\n");
+		LOGP(DL1C, LOGL_ERROR,
+		                "Received and ignored from l23 - L1CTL_RESET_REQ (type=unknown)\n");
 		break;
 	}
 }
@@ -369,7 +375,8 @@ void l1ctl_rx_tch_mode_req(struct msgb *msg)
 	uint8_t tch_mode = tch_mode_req->tch_mode;
 	uint8_t audio_mode = tch_mode_req->audio_mode;
 
-	DEBUGP(DL1C, "Received and handled from l23 - L1CTL_TCH_MODE_REQ (tch_mode=0x%02x audio_mode=0x%02x)\n",
+	DEBUGP(DL1C,
+	                "Received and handled from l23 - L1CTL_TCH_MODE_REQ (tch_mode=0x%02x audio_mode=0x%02x)\n",
 	                tch_mode, audio_mode);
 //	tch_mode = l1a_tch_mode_set(tch_mode);
 //	audio_mode = l1a_audio_mode_set(audio_mode);
@@ -441,22 +448,28 @@ void l1ctl_rx_traffic_req(struct msgb *msg)
 /**
  * @brief Handler for received L1CTL_SIM_REQ from L23.
  *
- * -- sim request.
+ * -- sim request --
  *
  * @param [in] msg the received message.
  *
- * Forward and process a request for the SIM card.
+ * Forward and a sim request to the SIM APDU.
  *
- * TODO: Implement this handler routine!
- * TODO: Probably some sim requests need to be mocked for the virtual physical layer.
+ * Note: Not needed for virtual layer. Please configure layer23 application to use test-sim implementation.
+ * ms <x>
+ * --------
+ * sim test
+ * test-sim
+ *  imsi <xxxxxxxxxxxxxxx>
+ *  ki comp128 <xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx>
+ * --------
  */
 void l1ctl_rx_sim_req(struct msgb *msg)
 {
 	uint16_t len = msg->len - sizeof(struct l1ctl_hdr);
 	uint8_t *data = msg->data + sizeof(struct l1ctl_hdr);
 
-	DEBUGP(DL1C, "Received and handled from l23 - SIM Request length: %u, data: %s: ", len,
-	                osmo_hexdump(data, sizeof(data)));
+	DEBUGP(DL1C,
+	                "Received and ignored from l23 - SIM Request length: %u, data: %s: ",
+	                len, osmo_hexdump(data, sizeof(data)));
 
-	//sim_apdu(len, data);
 }

@@ -182,11 +182,7 @@ void gsmtapl1_rx_from_virt_um_inst_cb(struct virt_um_inst *vui,
 			// TODO: implement channel handling
 			break;
 		case GSMTAP_CHANNEL_TCH_F:
-			l1ctl_msg = l1ctl_msgb_alloc(L1CTL_DATA_IND);
-			// TODO: implement channel handling
-			break;
-		case GSMTAP_CHANNEL_TCH_H:
-			l1ctl_msg = l1ctl_msgb_alloc(L1CTL_DATA_IND);
+			l1ctl_msg = l1ctl_msgb_alloc(L1CTL_TRAFFIC_IND);
 			// TODO: implement channel handling
 			break;
 		case GSMTAP_CHANNEL_AGCH:
@@ -202,6 +198,7 @@ void gsmtapl1_rx_from_virt_um_inst_cb(struct virt_um_inst *vui,
 			// TODO: implement channel handling
 			break;
 		case GSMTAP_CHANNEL_CCCH:
+		case GSMTAP_CHANNEL_TCH_H:
 		case GSMTAP_CHANNEL_PACCH:
 		case GSMTAP_CHANNEL_PDCH:
 		case GSMTAP_CHANNEL_PTCCH:

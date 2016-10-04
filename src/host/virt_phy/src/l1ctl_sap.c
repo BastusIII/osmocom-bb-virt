@@ -4,6 +4,7 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/utils.h>
 #include <stdio.h>
+#include <pthread.h>
 #include <l1ctl_proto.h>
 #include <netinet/in.h>
 
@@ -11,7 +12,8 @@
 #include "logging.h"
 
 /* Buffer for incoming L1CTL messages from layer 2 */
-static struct llist_head l1ctl_rx_queue = LLIST_HEAD_INIT(l1ctl_rx_queue);
+//static struct llist_head l1ctl_rx_queue = LLIST_HEAD_INIT(l1ctl_rx_queue);
+//static pthread_mutex_t l1ctl_rx_queue_mutex;
 
 static struct virt_um_inst *_vui = NULL;
 static struct l1ctl_sock_inst *_lsi = NULL;
@@ -35,8 +37,10 @@ void l1ctl_sap_rx_from_l23_inst_cb(struct l1ctl_sock_inst *lsi, struct msgb *msg
 	if (msg) {
 		DEBUGP(DL1C, "Message incoming from layer 2: %s\n",
 		                osmo_hexdump(msg->data, sizeof(msg->data)));
-		// TODO: Make this a critical section to avoid concurrent access to the queue. E.g. maybe spin_lock_irgsave
-		msgb_enqueue(&l1ctl_rx_queue, msg);
+		l1ctl_sap_handler(msg);
+//		pthread_mutex_lock(&l1ctl_rx_queue_mutex);
+//		msgb_enqueue(&l1ctl_rx_queue, msg);
+//		pthread_mutex_unlock(&l1ctl_rx_queue_mutex);
 	}
 }
 /**
@@ -54,7 +58,14 @@ void l1ctl_sap_rx_from_l23(struct msgb *msg)
  */
 void l1ctl_sap_tx_to_l23_inst(struct l1ctl_sock_inst *lsi, struct msgb *msg)
 {
-	l1ctl_sock_write_msg(lsi, msg);
+	uint16_t *len;
+	/* prepend 16bit length before sending */
+	len = (uint16_t *) msgb_push(msg, sizeof(*len));
+	*len = htons(msg->len - sizeof(*len));
+
+	if(l1ctl_sock_write_msg(lsi, msg) == -1 ) {
+		perror("Error writing to layer2 socket");
+	}
 }
 
 /**
@@ -137,23 +148,19 @@ struct msgb *l1ctl_create_l2_msg(int msg_type, uint32_t fn, uint16_t snr,
  * This handler will dequeue the rx queue (if !empty) and call the specific routine for the dequeued l1ctl message.
  *
  */
-void l1ctl_sap_handler(void)
+void l1ctl_sap_handler(struct msgb *msg)
 {
-	struct msgb *msg;
+//	struct msgb *msg;
 	struct l1ctl_hdr *l1h;
 	unsigned long flags;
-	// TODO: Make this a critical section to avoid concurrent access to the queue. E.g. maybe spin_lock_irgsave
-	msg = msgb_dequeue(&l1ctl_rx_queue);
+//	pthread_mutex_lock(&l1ctl_rx_queue_mutex);
+//	msg = msgb_dequeue(&l1ctl_rx_queue);
+//	pthread_mutex_unlock(&l1ctl_rx_queue_mutex);
 
 	if (!msg)
 		return;
 
 	l1h = (struct l1ctl_hdr *)msg->data;
-
-	DEBUGP(DL1C, "handle msg: %s, length: %u",
-	                osmo_hexdump(msg->data, sizeof(msg->data)), msg->len);
-
-	msg->l1h = msg->data;
 
 	if (sizeof(*l1h) > msg->len) {
 		LOGP(DL1C, LOGL_NOTICE, "Short message. %u\n", msg->len);

@@ -18,7 +18,7 @@ void l1ctl_sap_tx_to_l23_inst(struct l1ctl_sock_inst *lsi, struct msgb *msg);
 void l1ctl_sap_tx_to_l23(struct msgb *msg);
 void l1ctl_sap_rx_from_l23_inst_cb(struct l1ctl_sock_inst *lsi, struct msgb *msg);
 void l1ctl_sap_rx_from_l23(struct msgb *msg);
-void l1ctl_sap_handler(void);
+void l1ctl_sap_handler(struct msgb *msg);
 
 /* utility methods */
 struct msgb *l1ctl_msgb_alloc(uint8_t msg_type);
@@ -45,3 +45,4 @@ void l1ctl_rx_sim_req(struct msgb *msg);
 void l1ctl_tx_reset(uint8_t msg_type, uint8_t reset_type);
 void l1ctl_tx_ccch_mode_conf(uint8_t ccch_mode);
 void l1ctl_tx_tch_mode_conf(uint8_t tch_mode, uint8_t audio_mode);
+void l1ctl_tx_msg(uint8_t msg_type);

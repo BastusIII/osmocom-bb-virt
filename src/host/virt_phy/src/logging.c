@@ -26,15 +26,49 @@
 
 #include "logging.h"
 
+const char* l1ctlPrimNames[] = {
+        "_L1CTL_NONE",
+        "L1CTL_FBSB_REQ",
+        "L1CTL_FBSB_CONF",
+        "L1CTL_DATA_IND",
+        "L1CTL_RACH_REQ",
+        "L1CTL_DM_EST_REQ",
+        "L1CTL_DATA_REQ",
+        "L1CTL_RESET_IND",
+        "L1CTL_PM_REQ",
+        "L1CTL_PM_CONF",
+        "L1CTL_ECHO_REQ",
+        "L1CTL_ECHO_CONF",
+        "L1CTL_RACH_CONF",
+        "L1CTL_RESET_REQ",
+        "L1CTL_RESET_CONF",
+        "L1CTL_DATA_CONF",
+        "L1CTL_CCCH_MODE_REQ",
+        "L1CTL_CCCH_MODE_CONF",
+        "L1CTL_DM_REL_REQ",
+        "L1CTL_PARAM_REQ",
+        "L1CTL_DM_FREQ_REQ",
+        "L1CTL_CRYPTO_REQ",
+        "L1CTL_SIM_REQ",
+        "L1CTL_SIM_CONF",
+        "L1CTL_TCH_MODE_REQ",
+        "L1CTL_TCH_MODE_CONF",
+        "L1CTL_NEIGH_PM_REQ",
+        "L1CTL_NEIGH_PM_IND",
+        "L1CTL_TRAFFIC_REQ",
+        "L1CTL_TRAFFIC_CONF",
+        "L1CTL_TRAFFIC_IND"
+};
+
 static const struct log_info_cat default_categories[] = {
-	[DL1C]	= {
+	[DL1C] = {
 		.name = "DL1C",
 		.description = "Layer 1 Control",
 		.color = "\033[1;31m",
 		.enabled = 1,
 		.loglevel = LOGL_DEBUG,
 	},
-	[DVIRPHY]	= {
+	[DVIRPHY] = {
 		.name = "DVIRPHY",
 		.description = "Virtual Layer 1 Interface",
 		.color = "\033[1;31m",
@@ -73,3 +107,7 @@ int ms_log_init(char *cat_mask) {
 	return 0;
 }
 
+char *getL1ctlPrimName(uint8_t type)
+{
+	return l1ctlPrimNames[type];
+}

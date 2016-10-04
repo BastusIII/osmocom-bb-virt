@@ -3,7 +3,6 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
 
-/* TODO: multiple sockets for multiple virtual mobiles clients need to be possible!*/
 #define L1CTL_SOCK_PATH	"/tmp/osmocom_l2"
 
 /* L1CTL socket instance contains socket data. */

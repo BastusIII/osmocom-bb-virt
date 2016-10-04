@@ -24,7 +24,20 @@ void l1ctl_tx_reset(uint8_t msg_type, uint8_t reset_type)
 	reset_resp = (struct l1ctl_reset *)msgb_put(msg, sizeof(*reset_resp));
 	reset_resp->type = reset_type;
 
-	DEBUGP(DL1C, "Sending to l23 - L1CTL_RESET (reset_type: %u)\n", reset_type);
+	DEBUGP(DL1C, "Sending to l23 - L1CTL_RESET (reset_type: %u)\n",
+	                reset_type);
+	l1ctl_sap_tx_to_l23(msg);
+}
+
+/**
+ * @brief Transmit L1CTL msg of a given type to layer 23.
+ *
+ * @param [in] msg_type L1CTL primitive message type.
+ */
+void l1ctl_tx_msg(uint8_t msg_type)
+{
+	struct msgb *msg = l1ctl_msgb_alloc(msg_type);
+	DEBUGP(DL1C, "Sending to l23 - %s\n", getL1ctlPrimName(msg_type));
 	l1ctl_sap_tx_to_l23(msg);
 }
 
@@ -46,7 +59,8 @@ void l1ctl_tx_ccch_mode_conf(uint8_t ccch_mode)
 	                sizeof(*mode_conf));
 	mode_conf->ccch_mode = ccch_mode;
 
-	DEBUGP(DL1C, "Sending to l23 - L1CTL_CCCH_MODE_CONF (mode: %u)\n", ccch_mode);
+	DEBUGP(DL1C, "Sending to l23 - L1CTL_CCCH_MODE_CONF (mode: %u)\n",
+	                ccch_mode);
 	l1ctl_sap_tx_to_l23(msg);
 }
 
@@ -69,6 +83,8 @@ void l1ctl_tx_tch_mode_conf(uint8_t tch_mode, uint8_t audio_mode)
 	mode_conf->tch_mode = tch_mode;
 	mode_conf->audio_mode = audio_mode;
 
-	DEBUGP(DL1C, "Sending to l23 - L1CTL_TCH_MODE_CONF (tch_mode: %u, audio_mode: %u)\n", audio_mode);
+	DEBUGP(DL1C,
+	                "Sending to l23 - L1CTL_TCH_MODE_CONF (tch_mode: %u, audio_mode: %u)\n",
+	                audio_mode);
 	l1ctl_sap_tx_to_l23(msg);
 }

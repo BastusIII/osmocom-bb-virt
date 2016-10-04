@@ -61,34 +61,44 @@ static int l1ctl_sock_data_cb(struct osmo_fd *ofd, unsigned int what)
 	struct l1ctl_sock_inst *lsi = ofd->data;
 	// Check if request is really read request
 	if (what & BSC_FD_READ) {
-		struct msgb *msg = msgb_alloc(L1CTL_SOCK_MSGB_SIZE, "L1CTL sock rx");
+		struct msgb *msg = msgb_alloc(L1CTL_SOCK_MSGB_SIZE,
+		                "L1CTL sock rx");
 		int rc;
+		uint16_t len;
 
-		rc = read(ofd->fd, msgb_data(msg), msgb_tailroom(msg));
-		if (rc > 0) {
-			msgb_put(msg, rc);
-			lsi->recv_cb(lsi, msg);
-		} else {
-			fprintf(stderr, "Failed to receive msg from l2. Connection will be closed.\n");
-			lsi->recv_cb(lsi, NULL); // TODO: FIX, program fails here. NULL is not submitted to recv_cb
-			osmo_fd_unregister(ofd);
-			close(ofd->fd);
-			ofd->fd = -1;
-			ofd->when = 0;
+		// read length of the message first
+		rc = read(ofd->fd, &len, sizeof(len));
+		if (rc < sizeof(len)) {
+			goto ERR;
 		}
+		len = ntohs(len);
+		if (len <= 0 || len > L1CTL_SOCK_MSGB_SIZE) {
+			goto ERR;
+		}
+		rc = read(ofd->fd, msgb_data(msg), len);
+		if (rc == len) {
+			msgb_put(msg, rc);
+			msg->l1h = msgb_data(msg);
+			lsi->recv_cb(lsi, msg);
+			return 0;
+		}
+ERR:
+		perror("Failed to receive msg from l2. Connection will be closed.\n");
+		l1ctl_sock_destroy(lsi);
 	}
 	return 0;
+
 }
 
-// TODO: enable multiple connections to l2 apps like in osmocon
-static int l1ctl_sock_accept_cb(struct osmo_fd *ofd, unsigned int what) {
+static int l1ctl_sock_accept_cb(struct osmo_fd *ofd, unsigned int what)
+{
 
 	struct l1ctl_sock_inst *lsi = ofd->data;
 	struct sockaddr_un local_addr;
 	socklen_t addr_len = sizeof(struct sockaddr_in);
 	int fd;
 
-	fd = accept(ofd->fd, (struct sockaddr *) &local_addr, &addr_len);
+	fd = accept(ofd->fd, (struct sockaddr *)&local_addr, &addr_len);
 	if (fd < 0) {
 		fprintf(stderr, "Failed to accept connection to l2.\n");
 		return -1;
@@ -106,7 +116,10 @@ static int l1ctl_sock_accept_cb(struct osmo_fd *ofd, unsigned int what) {
 	return 0;
 }
 
-struct l1ctl_sock_inst *l1ctl_sock_init(void *ctx, void (*recv_cb)(struct l1ctl_sock_inst *lsi, struct msgb *msg), char *path)
+struct l1ctl_sock_inst *l1ctl_sock_init(
+                void *ctx,
+                void (*recv_cb)(struct l1ctl_sock_inst *lsi, struct msgb *msg),
+                char *path)
 {
 	struct l1ctl_sock_inst *lsi;
 	struct sockaddr_un local_addr;
@@ -115,7 +128,7 @@ struct l1ctl_sock_inst *l1ctl_sock_init(void *ctx, void (*recv_cb)(struct l1ctl_
 	if (!path)
 		path = L1CTL_SOCK_PATH;
 
-	if((fd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+	if ((fd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
 		fprintf(stderr, "Failed to create Unix Domain Socket.\n");
 		return NULL;
 	}
@@ -124,9 +137,10 @@ struct l1ctl_sock_inst *l1ctl_sock_init(void *ctx, void (*recv_cb)(struct l1ctl_
 	strcpy(local_addr.sun_path, path);
 	unlink(local_addr.sun_path);
 
-	if ((rc = bind(fd, (struct sockaddr *) &local_addr, sizeof(local_addr))) != 0) {
+	if ((rc = bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)))
+	                != 0) {
 		fprintf(stderr, "Failed to bind the unix domain socket. '%s'\n",
-			local_addr.sun_path);
+		                local_addr.sun_path);
 		return NULL;
 	}
 
@@ -164,7 +178,7 @@ int l1ctl_sock_write_msg(struct l1ctl_sock_inst *lsi, struct msgb *msg)
 {
 	int rc;
 
-	rc = write(lsi->ofd.fd, msgb_data(msg), msgb_length(msg));
+	rc = write(lsi->connection.fd, msgb_data(msg), msgb_length(msg));
 	msgb_free(msg);
 
 	return rc;
