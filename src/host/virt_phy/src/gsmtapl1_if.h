@@ -13,3 +13,5 @@ void gsmtapl1_rx_from_virt_um(struct msgb *msg);
 
 void gsmtapl1_tx_to_virt_um_inst(struct virt_um_inst *vui, struct msgb *msg);
 void gsmtapl1_tx_to_virt_um(struct msgb *msg);
+
+uint8_t chantype_gsmtap2rsl(uint8_t gsmtap_chantype);

@@ -59,6 +59,7 @@
 static int l1ctl_sock_data_cb(struct osmo_fd *ofd, unsigned int what)
 {
 	struct l1ctl_sock_inst *lsi = ofd->data;
+	int cnt = 0;
 	// Check if request is really read request
 	if (what & BSC_FD_READ) {
 		struct msgb *msg = msgb_alloc(L1CTL_SOCK_MSGB_SIZE,
@@ -66,16 +67,18 @@ static int l1ctl_sock_data_cb(struct osmo_fd *ofd, unsigned int what)
 		int rc;
 		uint16_t len;
 
-		// read length of the message first
+		// read length of the message first and convert to host byte order
 		rc = read(ofd->fd, &len, sizeof(len));
 		if (rc < sizeof(len)) {
 			goto ERR;
 		}
+		// convert to host byte order
 		len = ntohs(len);
 		if (len <= 0 || len > L1CTL_SOCK_MSGB_SIZE) {
 			goto ERR;
 		}
 		rc = read(ofd->fd, msgb_data(msg), len);
+
 		if (rc == len) {
 			msgb_put(msg, rc);
 			msg->l1h = msgb_data(msg);
@@ -84,7 +87,7 @@ static int l1ctl_sock_data_cb(struct osmo_fd *ofd, unsigned int what)
 		}
 ERR:
 		perror("Failed to receive msg from l2. Connection will be closed.\n");
-		l1ctl_sock_destroy(lsi);
+		l1ctl_sock_disconnect(lsi);
 	}
 	return 0;
 
@@ -156,6 +159,8 @@ struct l1ctl_sock_inst *l1ctl_sock_init(
 	lsi->ofd.fd = fd;
 	lsi->ofd.when = BSC_FD_READ;
 	lsi->ofd.cb = l1ctl_sock_accept_cb;
+	// no connection -> invalid filedescriptor and not 0 (==std_in)
+	lsi->connection.fd = -1;
 
 	osmo_fd_register(&lsi->ofd);
 
@@ -174,12 +179,19 @@ void l1ctl_sock_destroy(struct l1ctl_sock_inst *lsi)
 	talloc_free(lsi);
 }
 
+void l1ctl_sock_disconnect(struct l1ctl_sock_inst *lsi)
+{
+	struct osmo_fd *ofd = &lsi->connection;
+	osmo_fd_unregister(ofd);
+	close(ofd->fd);
+	ofd->fd = -1;
+	ofd->when = 0;
+}
+
 int l1ctl_sock_write_msg(struct l1ctl_sock_inst *lsi, struct msgb *msg)
 {
 	int rc;
-
 	rc = write(lsi->connection.fd, msgb_data(msg), msgb_length(msg));
 	msgb_free(msg);
-
 	return rc;
 }

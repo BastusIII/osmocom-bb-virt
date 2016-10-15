@@ -30,3 +30,8 @@ int l1ctl_sock_write_msg(struct l1ctl_sock_inst *lsi, struct msgb *msg);
  * @brief Destroy instance.
  */
 void l1ctl_sock_destroy();
+
+/**
+ * @brief Disconnect current connection.
+ */
+void l1ctl_sock_disconnect(struct l1ctl_sock_inst *lsi);

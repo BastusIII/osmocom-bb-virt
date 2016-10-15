@@ -4,13 +4,14 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/utils.h>
 #include <stdio.h>
-#include <pthread.h>
+//#include <pthread.h>
 #include <l1ctl_proto.h>
 #include <netinet/in.h>
 
 #include "l1ctl_sap.h"
 #include "logging.h"
 
+//TODO: cleanup if sure that the queue logic is really not needed
 /* Buffer for incoming L1CTL messages from layer 2 */
 //static struct llist_head l1ctl_rx_queue = LLIST_HEAD_INIT(l1ctl_rx_queue);
 //static pthread_mutex_t l1ctl_rx_queue_mutex;
@@ -36,7 +37,7 @@ void l1ctl_sap_rx_from_l23_inst_cb(struct l1ctl_sock_inst *lsi, struct msgb *msg
 {
 	if (msg) {
 		DEBUGP(DL1C, "Message incoming from layer 2: %s\n",
-		                osmo_hexdump(msg->data, sizeof(msg->data)));
+		                osmo_hexdump(msg->data, msg->len));
 		l1ctl_sap_handler(msg);
 //		pthread_mutex_lock(&l1ctl_rx_queue_mutex);
 //		msgb_enqueue(&l1ctl_rx_queue, msg);
@@ -64,7 +65,7 @@ void l1ctl_sap_tx_to_l23_inst(struct l1ctl_sock_inst *lsi, struct msgb *msg)
 	*len = htons(msg->len - sizeof(*len));
 
 	if(l1ctl_sock_write_msg(lsi, msg) == -1 ) {
-		perror("Error writing to layer2 socket");
+		//DEBUGP(DL1C, "Error writing to layer2 socket");
 	}
 }
 
@@ -93,7 +94,6 @@ struct msgb *l1ctl_msgb_alloc(uint8_t msg_type)
 {
 	struct msgb *msg;
 	struct l1ctl_hdr *l1h;
-
 	msg = msgb_alloc_headroom(L3_MSG_SIZE, L3_MSG_HEAD, "l1ctl");
 	if (!msg) {
 		while (1) {

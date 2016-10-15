@@ -24,6 +24,7 @@ void l1ctl_sap_handler(struct msgb *msg);
 struct msgb *l1ctl_msgb_alloc(uint8_t msg_type);
 struct msgb *l1ctl_create_l2_msg(int msg_type, uint32_t fn, uint16_t snr,
                                  uint16_t arfcn);
+
 /* receive routines */
 void l1ctl_rx_fbsb_req(struct msgb *msg);
 void l1ctl_rx_dm_est_req(struct msgb *msg);
@@ -43,6 +44,8 @@ void l1ctl_rx_sim_req(struct msgb *msg);
 
 /* transmit routines */
 void l1ctl_tx_reset(uint8_t msg_type, uint8_t reset_type);
+void l1ctl_tx_pm_conf(struct l1ctl_pm_req *pm_req);
+void l1ctl_tx_fbsb_conf(uint8_t res, uint16_t arfcn);
 void l1ctl_tx_ccch_mode_conf(uint8_t ccch_mode);
 void l1ctl_tx_tch_mode_conf(uint8_t tch_mode, uint8_t audio_mode);
 void l1ctl_tx_msg(uint8_t msg_type);

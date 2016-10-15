@@ -22,6 +22,8 @@
 #include <osmocom/core/gsmtap.h>
 #include <osmocom/core/gsmtap_util.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/gsm/rsl.h>
+#include <osmocom/gsm/protocol/gsm_08_58.h>
 #include <osmocom/core/msgb.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -153,28 +155,26 @@ void gsmtapl1_rx_from_virt_um_inst_cb(struct virt_um_inst *vui,
                                       struct msgb *msg)
 {
 	if (msg) {
-		struct gsmtap_hdr *gh = msgb_l1(msg);
-		uint8_t gsmtap_chan_type = gh->type; // the logical channel type
-		uint8_t timeslot = gh->timeslot; // indicates the physical channel
-		uint8_t subslot = gh->sub_slot; // indicates the logical channel subslot on the physical channel FIXME: calculate
-
-		struct l1ctl_hdr *l1ctlh;
+		struct gsmtap_hdr *gh;
 		struct l1ctl_info_dl *l1dl;
-		struct msgb *l1ctl_msg;
+		struct msgb *l1ctl_msg = NULL;
+		struct l1ctl_data_ind * l1di;
 
-		msg->l2h = (uint8_t *) gh + sizeof(*gh);
+		msg->l1h = msgb_data(msg);
+		msg->l2h = msgb_pull(msg, sizeof(*gh));
+		gh = msgb_l1(msg);
 
 		DEBUGP(DVIRPHY,
-		                "Receiving gsmtap msg from virt um - (arfcn=%u, type=%s, subtype=%s, timeslot=%u, subslot=%u)\n",
-		                gh->arfcn, get_value_string(gsmtap_types, gh->type), get_value_string(gsmtap_channels, gh->sub_type), gh->timeslot,
+		                "Receiving gsmtap msg from virt um - (arfcn=%u, framenumber=%u, type=%s, subtype=%s, timeslot=%u, subslot=%u)\n",
+		                ntohs(gh->arfcn), ntohl(gh->frame_number), get_value_string(gsmtap_types, gh->type), get_value_string(gsmtap_channels, gh->sub_type), gh->timeslot,
 		                gh->sub_slot);
 
-		// compose the l1ctl header for layer 2
+		// compose the l1ctl message for layer 2
 		switch (gh->sub_type) {
 		case GSMTAP_CHANNEL_RACH:
 			LOGP(DL1C, LOGL_NOTICE,
 			                "Ignoring gsmtap msg from virt um - channel type is uplink only!\n");
-			goto nomessage;
+			break;
 		case GSMTAP_CHANNEL_SDCCH:
 		case GSMTAP_CHANNEL_SDCCH4:
 		case GSMTAP_CHANNEL_SDCCH8:
@@ -190,12 +190,23 @@ void gsmtapl1_rx_from_virt_um_inst_cb(struct virt_um_inst *vui,
 			// TODO: implement channel handling
 			break;
 		case GSMTAP_CHANNEL_PCH:
-			l1ctl_msg = l1ctl_msgb_alloc(L1CTL_DATA_IND);
-			// TODO: implement channel handling
-			break;
 		case GSMTAP_CHANNEL_BCCH:
 			l1ctl_msg = l1ctl_msgb_alloc(L1CTL_DATA_IND);
-			// TODO: implement channel handling
+			l1dl = (struct l1ctl_info_dl *) msgb_put(l1ctl_msg, sizeof(struct l1ctl_info_dl));
+			l1di = (struct l1ctl_data_ind *) msgb_put(l1ctl_msg, sizeof(struct l1ctl_data_ind));
+
+			l1dl->band_arfcn = htons(ntohs(gh->arfcn));
+			l1dl->link_id = gh->timeslot;
+			// see GSM 8.58 -> 9.3.1 for channel number encoding
+			l1dl->chan_nr = rsl_enc_chan_nr(chantype_gsmtap2rsl(gh->sub_type), gh->sub_slot, gh->timeslot);
+			l1dl->frame_nr = htonl(ntohl(gh->frame_number));
+			l1dl->snr = gh->snr_db;
+			l1dl->rx_level = gh->signal_dbm;
+			l1dl->num_biterr = 0;
+			l1dl->fire_crc = 0;
+
+			memcpy(l1di->data, msgb_data(msg), msgb_length(msg));
+
 			break;
 		case GSMTAP_CHANNEL_CCCH:
 		case GSMTAP_CHANNEL_TCH_H:
@@ -206,23 +217,20 @@ void gsmtapl1_rx_from_virt_um_inst_cb(struct virt_um_inst *vui,
 		case GSMTAP_CHANNEL_CBCH52:
 			LOGP(DL1C, LOGL_NOTICE,
 			                "Ignoring gsmtap msg from virt um - channel type not supported!\n");
-			goto nomessage;
+			break;
 		default:
 			LOGP(DL1C, LOGL_NOTICE,
 			                "Ignoring gsmtap msg from virt um - channel type unknown.\n");
-			goto nomessage;
+			break;
 		}
 
-		// fill l1ctl message with received l2 data
-		l1ctl_msg->l2h = msgb_put(l1ctl_msg, msgb_l2len(msg));
-		memcpy(l1ctl_msg->l2h, msgb_l2(msg), msgb_l2len(msg));
-		/* forward l1ctl primitive */
-		l1ctl_sap_tx_to_l23(l1ctl_msg);
-		//DEBUGP(DL1C, "Message forwarded to layer 2.\n");
-		return;
+		/* forward l1ctl message to l2 */
+		if(l1ctl_msg) {
+			l1ctl_sap_tx_to_l23(l1ctl_msg);
+		}
 
 		// handle memory deallocation
-		nomessage: free(msg);
+		talloc_free(msg);
 	}
 }
 
@@ -234,3 +242,45 @@ void gsmtapl1_rx_from_virt_um(struct msgb *msg)
 	gsmtapl1_rx_from_virt_um_inst_cb(_vui, msg);
 }
 
+/*! \brief convert GSMTAP channel type to RSL channel number
+ *  \param[in] rsl_chantype RSL channel type
+ *  \param[in] link_id RSL link identifier
+ *  \returns GSMTAP channel type
+ */
+uint8_t chantype_gsmtap2rsl(uint8_t gsmtap_chantype)
+{
+	// TODO: proper retval for unknown channel
+	uint8_t ret = 0;
+
+	switch (gsmtap_chantype) {
+	case GSMTAP_CHANNEL_TCH_F:
+		ret = RSL_CHAN_Bm_ACCHs;
+		break;
+	case GSMTAP_CHANNEL_TCH_H:
+		ret = RSL_CHAN_Lm_ACCHs;
+		break;
+	case GSMTAP_CHANNEL_SDCCH4:
+		ret = RSL_CHAN_SDCCH4_ACCH;
+		break;
+	case GSMTAP_CHANNEL_SDCCH8:
+		ret = RSL_CHAN_SDCCH8_ACCH;
+		break;
+	case GSMTAP_CHANNEL_BCCH:
+		ret = RSL_CHAN_BCCH;
+		break;
+	case GSMTAP_CHANNEL_RACH:
+		ret = RSL_CHAN_RACH;
+		break;
+	case GSMTAP_CHANNEL_PCH:
+	case GSMTAP_CHANNEL_AGCH:
+		/* it could also be AGCH... */
+		ret = RSL_CHAN_PCH_AGCH;
+		break;
+	}
+
+	// TODO: check how to handle this...
+//	if (link_id & 0x40)
+//		ret |= GSMTAP_CHANNEL_ACCH;
+
+	return ret;
+}

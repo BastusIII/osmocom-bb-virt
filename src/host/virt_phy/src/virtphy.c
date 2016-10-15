@@ -20,6 +20,7 @@ int main(void)
 	static struct virt_um_inst *vui;
 	static struct l1ctl_sock_inst *lsi;
 	ms_log_init("DL1C,1:DVIRPHY,1");
+	//ms_log_init("DL1C,8:DVIRPHY,8");
 
 	LOGP(DVIRPHY, LOGL_INFO, "Virtual physical layer starting up...\n");
 

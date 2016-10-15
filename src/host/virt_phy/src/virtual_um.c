@@ -19,6 +19,7 @@
  *
  */
 
+#include <unistd.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/core/socket.h>
@@ -49,7 +50,6 @@ static int virt_um_fd_cb(struct osmo_fd *ofd, unsigned int what)
 		// rc is number of bytes actually read
 		if (rc > 0) {
 			msgb_put(msg, rc);
-			msg->l1h = msgb_data(msg);
 			// call the l1 callback function for a received msg
 			vui->recv_cb(vui, msg);
 		} else {

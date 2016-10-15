@@ -17,8 +17,10 @@
  * @param [in] msg the received message.
  *
  * Transmit frequency control and synchronisation bursts on FCCH and SCH to calibrate transceiver and search for base stations.
+ * Sync to a given arfcn.
  *
  * Note: Not needed for virtual physical layer.
+ * TODO: Could be used to bind/connect to different virtual_bts sockets with a arfcn-socket mapping.
  */
 void l1ctl_rx_fbsb_req(struct msgb *msg)
 {
@@ -26,8 +28,10 @@ void l1ctl_rx_fbsb_req(struct msgb *msg)
 	struct l1ctl_fbsb_req *sync_req = (struct l1ctl_fbsb_req *)l1h->data;
 
 	DEBUGP(DL1C,
-	                "Received and ignored from l23 - L1CTL_FBSB_REQ (arfcn=%u, flags=0x%x)\n",
+	                "Received and handled from l23 - L1CTL_FBSB_REQ (arfcn=%u, flags=0x%x)\n",
 	                ntohs(sync_req->band_arfcn), sync_req->flags);
+
+	l1ctl_tx_fbsb_conf(0, ntohs(sync_req->band_arfcn));
 }
 
 /**
@@ -270,17 +274,42 @@ void l1ctl_rx_data_req(struct msgb *msg)
  *
  * @param [in] msg the received message.
  *
- * Process power measurement to calculate and adjust optimal sending power.
+ * Process power measurement for a given range of arfcns to calculate signal power and connection quality.
  *
- * Note: Not needed for virtual physical layer.
+ * Note: We do not need to calculate that for the virtual physical layer, but l23 apps can expect a response. So this response is mocked here.
  */
 void l1ctl_rx_pm_req(struct msgb *msg)
 {
 	struct l1ctl_hdr *l1h = (struct l1ctl_hdr *)msg->data;
 	struct l1ctl_pm_req *pm_req = (struct l1ctl_pm_req *)l1h->data;
+	struct msgb *resp_msg = l1ctl_msgb_alloc(L1CTL_PM_CONF);
+	uint16_t arfcn_next;
+	// convert to host order
+	pm_req->range.band_arfcn_from = ntohs(pm_req->range.band_arfcn_from);
+	pm_req->range.band_arfcn_to = ntohs(pm_req->range.band_arfcn_to);
 
-	DEBUGP(DL1C, "Received and ignored from l23 - L1CTL_PM_REQ TYPE=%u\n",
-	                pm_req->type);
+	DEBUGP(DL1C, "Received from l23 - L1CTL_PM_REQ TYPE=%u, FROM=%d, TO=%d\n",
+	                pm_req->type, pm_req->range.band_arfcn_from, pm_req->range.band_arfcn_to);
+
+	for(arfcn_next = pm_req->range.band_arfcn_from; arfcn_next <= pm_req->range.band_arfcn_to; ++arfcn_next) {
+		struct l1ctl_pm_conf *pm_conf = (struct l1ctl_pm_conf *)msgb_put(resp_msg, sizeof(*pm_conf));
+		pm_conf->band_arfcn = htons(arfcn_next);
+		// rxlev 63 is great, 0 is bad the two values are probably min and max
+		pm_conf->pm[0] = 63;
+		pm_conf->pm[1] = 63;
+		if(arfcn_next == pm_req->range.band_arfcn_to) {
+			struct l1ctl_hdr *resp_l1h = resp_msg->l1h;
+			resp_l1h->flags |= L1CTL_F_DONE;
+		}
+		// no more space in msgb, flush to l2
+		if(msgb_tailroom(resp_msg) < sizeof(*pm_conf)) {
+			l1ctl_sap_tx_to_l23(resp_msg);
+			resp_msg = l1ctl_msgb_alloc(L1CTL_PM_CONF);
+		}
+	}
+	if(resp_msg) {
+		l1ctl_sap_tx_to_l23(resp_msg);
+	}
 }
 
 /**
