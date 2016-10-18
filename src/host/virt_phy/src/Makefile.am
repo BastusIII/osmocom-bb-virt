@@ -3,7 +3,7 @@ AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
 CFLAGS = -g -O0
 
 sbin_PROGRAMS = virtphy
-virtphy_SOURCES = virtphy.c l1ctl_sock.c virtual_um.c l1ctl_sap.c l1ctl_rx_routines.c l1ctl_tx_routines.c gsmtapl1_if.c logging.c osmo_mcast_sock.c
+virtphy_SOURCES = virtphy.c l1ctl_sock.c virtual_um.c l1ctl_sap.c gsmtapl1_if.c logging.c osmo_mcast_sock.c virt_l1_model.c
 virtphy_LDADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOGSM_LIBS)
 
 # debug output

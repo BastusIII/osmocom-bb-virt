@@ -30,13 +30,14 @@
 #include <string.h>
 #include <l1ctl_proto.h>
 
+#include "virtual_um.h"
+#include "l1ctl_sock.h"
+#include "virt_l1_model.h"
 #include "l1ctl_sap.h"
 #include "gsmtapl1_if.h"
-#include "virtual_um.h"
 #include "logging.h"
 
-static struct virt_um_inst *_vui = NULL;
-static struct l1ctl_sock_inst *_lsi = NULL;
+static struct l1_model_ms *l1_model_ms = NULL;
 
 // for debugging
 static const struct value_string gsmtap_channels [22] = {
@@ -82,10 +83,9 @@ static const struct value_string gsmtap_types [10] = {
 	{ 0,				NULL },
 };
 
-void gsmtapl1_init(struct virt_um_inst *vui, struct l1ctl_sock_inst *lsi)
+void gsmtapl1_init(struct l1_model_ms *model)
 {
-	_vui = vui;
-	_lsi = lsi;
+	l1_model_ms = model;
 }
 
 /**
@@ -128,7 +128,7 @@ void gsmtapl1_tx_to_virt_um_inst(struct virt_um_inst *vui, struct msgb *msg)
  */
 void gsmtapl1_tx_to_virt_um(struct msgb *msg)
 {
-	gsmtapl1_tx_to_virt_um_inst(_vui, msg);
+	gsmtapl1_tx_to_virt_um_inst(l1_model_ms->vui, msg);
 }
 
 /* This is the header as it is used by gsmtap peer virtual layer 1.
@@ -186,9 +186,6 @@ void gsmtapl1_rx_from_virt_um_inst_cb(struct virt_um_inst *vui,
 			// TODO: implement channel handling
 			break;
 		case GSMTAP_CHANNEL_AGCH:
-			l1ctl_msg = l1ctl_msgb_alloc(L1CTL_DATA_IND);
-			// TODO: implement channel handling
-			break;
 		case GSMTAP_CHANNEL_PCH:
 		case GSMTAP_CHANNEL_BCCH:
 			l1ctl_msg = l1ctl_msgb_alloc(L1CTL_DATA_IND);
@@ -239,7 +236,7 @@ void gsmtapl1_rx_from_virt_um_inst_cb(struct virt_um_inst *vui,
  */
 void gsmtapl1_rx_from_virt_um(struct msgb *msg)
 {
-	gsmtapl1_rx_from_virt_um_inst_cb(_vui, msg);
+	gsmtapl1_rx_from_virt_um_inst_cb(l1_model_ms->vui, msg);
 }
 
 /*! \brief convert GSMTAP channel type to RSL channel number
@@ -273,7 +270,6 @@ uint8_t chantype_gsmtap2rsl(uint8_t gsmtap_chantype)
 		break;
 	case GSMTAP_CHANNEL_PCH:
 	case GSMTAP_CHANNEL_AGCH:
-		/* it could also be AGCH... */
 		ret = RSL_CHAN_PCH_AGCH;
 		break;
 	}
