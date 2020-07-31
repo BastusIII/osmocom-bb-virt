@@ -1,4 +1,4 @@
-/* Logging/Debug support of the layer2/3 stack */
+/* Logging/Debug support of the virtual layer 1 */
 
 /* (C) 2010 by Harald Welte <laforge@gnumonks.org>
  *
